@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NETRIKA</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css" rel="stylesheet">
+    <link href="https://cdn.boxicons.com/3.0.8/fonts/filled/boxicons-filled.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Preloader: animated sequence before the page loads -->
+    <div id="preloader">
+        <div class="preloader-words"></div>
+    </div>
+    <noscript>
+        <style>
+            #preloader { display: none; }
+        </style>
+    </noscript>
+
+    <header>
+        <a href="#frame1" class="logo">
+            <span class="logo-name">NETRIKA</span>
+            <span class="logo-tagline">See.Recognise.Record</span>
+        </a>
+        <nav>
+            <a href="#frame1">Home</a>
+            <a href="#frame2">About</a>
+            <a href="#frame3">Contact</a>
+        </nav>
+    </header>
+
+    <div class="page-container">
+        <section id="frame1" class="frame">
+            <div class="hero-text">
+                <h1 class="typing" id="heroTitle"></h1>
+                <p class="hero-description"><span id="heroDescription"></span></p>
+            </div>
+        </section>
+
+        <section id="frame2" class="frame about-frame">
+            <div class="about-content">
+                <h2 class="about-title">HOW CAN <span class="netrika-bold">NETRIKA</span> HELP YOU?</h2>
+                <div class="help-buttons">
+                    <button class="help-btn" type="button" data-feature="accurate">Accurate Records</button>
+                    <button class="help-btn" type="button" data-feature="proxy">Prevents Proxy Attendance</button>
+                    <button class="help-btn" type="button" data-feature="time">Saves Time</button>
+                    <button class="help-btn" type="button" data-feature="management">Easy Data Management</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="frame3" class="frame contact-frame">
+            <div class="contact-content">
+                <i class='bx bxs-contact contact-icon'></i>
+                <h2>Contact</h2>
+                <p class="contact-name">Pranathi N P</p>
+                <p class="contact-email">
+                    <i class='bx bx-envelope'></i>
+                    <a href="mailto:pranathinp676@gmail.com">pranathinp676@gmail.com</a>
+                </p>
+                <p class="technology-footer">html . css . js . yolo . FastAPI . archface . mongodb</p>
+            </div>
+        </section>
+
+    </div>
+
+    <div class="feature-modal" id="featureModal" role="dialog" aria-modal="true" aria-labelledby="featureModalTitle" aria-hidden="true">
+        <button class="feature-modal-backdrop" type="button" aria-label="Close feature details"></button>
+        <div class="feature-modal-box">
+            <button class="feature-modal-close" type="button" aria-label="Close feature details">&times;</button>
+            <h3 id="featureModalTitle"></h3>
+            <div id="featureModalDetails"></div>
+        </div>
+    </div>
+
+    <div class="auth-modal" id="login">
+        <a href="#" class="modal-backdrop-close"></a>
+        <div class="modal-content">
+            <a href="#" class="close-modal">
+                <i class='bx bx-x'></i>
+            </a>
+            <div class="role-selection" id="roleSelection">
+                <h2>Who are you?</h2>
+                <p>Select your role to continue</p>
+                <div class="role-buttons">
+                    <button type="button" class="role-btn" data-role="student">
+                        <i class='bx bx-user'></i>
+                        Student
+                    </button>
+                    <button type="button" class="role-btn" data-role="teacher">
+                        <i class='bx bx-briefcase'></i>
+                        Teacher
+                    </button>
+                </div>
+            </div>
+
+            <div class="login-options" id="loginOptions">
+                <form class="login-option" data-login-role="student">
+                    <button type="button" class="role-back">&larr; Back</button>
+                    <h2>Student Login</h2>
+                    <input type="hidden" name="role" value="student">
+                    <div class="input-box">
+                        <input type="email" name="email" placeholder="Student email" autocomplete="email" required>
+                        <i class='bx bx-envelope'></i>
+                    </div>
+                    <div class="input-box has-password-toggle">
+                        <input type="password" name="password" placeholder="Password" autocomplete="current-password" required>
+                        <i class='bx bx-lock'></i>
+                        <button type="button" class="password-toggle" aria-label="Show password" aria-pressed="false" title="Show password">👁️</button>
+                    </div>
+                    <p><a href="/forgot-password?role=student">Forgot password?</a></p>
+                    <button type="submit" name="student_login_btn" class="btn">Student Login</button>
+                    <p class="form-status" role="status"></p>
+                    <p>Don't have an account? <a href="#register" class="switch-link">Register</a></p>
+                </form>
+
+                <form class="login-option" data-login-role="teacher">
+                    <button type="button" class="role-back">&larr; Back</button>
+                    <h2>Teacher Login</h2>
+                    <input type="hidden" name="role" value="teacher">
+                    <div class="input-box">
+                        <input type="text" name="username" placeholder="Teacher username" autocomplete="username" required>
+                        <i class='bx bx-user'></i>
+                    </div>
+                    <div class="input-box has-password-toggle">
+                        <input type="password" name="password" placeholder="Password" autocomplete="current-password" required>
+                        <i class='bx bx-lock'></i>
+                        <button type="button" class="password-toggle" aria-label="Show password" aria-pressed="false" title="Show password">👁️</button>
+                    </div>
+                    <button type="submit" name="teacher_login_btn" class="btn">Teacher Login</button>
+                    <p class="form-status" role="status"></p>
+                    <p>Authorized teachers only</p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="auth-modal" id="register">
+        <a href="#" class="modal-backdrop-close"></a>
+        <div class="modal-content">
+            <a href="#" class="close-modal">
+                <i class='bx bx-x'></i>
+            </a>
+            <div class="form-box">
+                <h2>Register</h2>
+                <form id="registerForm">
+                    <div class="input-box">
+                        <input type="text" name="name" placeholder="Full Name" autocomplete="name" required>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 12c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5m0 2c-3.31 0-10 1.79-10 5v3h20v-3c0-3.21-6.69-5-10-5"></path>
+                        </svg>
+                    </div>
+                    <div class="input-box">
+                        <input type="email" name="email" placeholder="Email" autocomplete="email" required>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M20 4H4c-1.1 0-2 .9-2 2v.25l10 7.5 10-7.5V6c0-1.1-.9-2-2-2m1.93 14.51c.04-.16.07-.33.07-.51V8.75l-5.62 4.22 5.55 5.55ZM12.6 15.8c-.18.13-.39.2-.6.2s-.42-.07-.6-.2l-2.16-1.62-5.75 5.75c.16.04.33.07.51.07h16c.18 0 .35-.03.51-.07l-5.75-5.75zM2 8.75V18c0 .18.03.35.07.51l5.55-5.55L2 8.74Z"></path>
+                        </svg>
+                    </div>
+                    <div class="input-box has-password-toggle">
+                        <input type="password" name="password" placeholder="Password (minimum 8 characters)" autocomplete="new-password" minlength="8" required>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M6 22h12c1.1 0 2-.9 2-2v-9c0-1.1-.9-2-2-2h-1V7c0-2.76-2.24-5-5-5S7 4.24 7 7v2H6c-1.1 0-2 .9-2 2v9c0 1.1.9 2 2 2M9 7c0-1.65 1.35-3 3-3s3 1.35 3 3v2H9z"></path>
+                        </svg>
+                        <button type="button" class="password-toggle" aria-label="Show password" aria-pressed="false" title="Show password">👁️</button>
+                    </div>
+                    <input type="hidden" name="role" value="student">
+                    <button type="submit" name="register_btn" class="btn">Register</button>
+                    <p class="form-status" role="status"></p>
+                    <p>Already have an account? <a href="#login" class="switch-link">Login</a></p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="registration-toast" id="registrationToast" role="status" aria-live="polite">
+        Congrats !!! Successfully registered
+        <span class="registration-toast-progress"></span>
+    </div>
+
+    <script>
+        (function () {
+            const root = document.documentElement;
+            let ticking = false;
+
+            function updateBackgroundPan() {
+                const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+                const progress = maxScroll > 0 ? window.scrollY / maxScroll : 0;
+                root.style.setProperty('--bg-pan-y', (progress * 100) + '%');
+                ticking = false;
+            }
+
+            window.addEventListener('scroll', function () {
+                if (ticking) return;
+                ticking = true;
+                requestAnimationFrame(updateBackgroundPan);
+            }, { passive: true });
+
+            window.addEventListener('resize', updateBackgroundPan);
+            updateBackgroundPan();
+        })();
+
+        window.addEventListener('load', function () {
+            const preloader = document.getElementById('preloader');
+            const wordsContainer = preloader.querySelector('.preloader-words');
+            document.body.style.overflow = 'hidden';
+
+            const words = [
+                'AUTOMATION', 'AI', 'MACHINE', 'LEARNING', 'DETECTION', 'RECOGNITION',
+                'SYSTEM', 'DATA', 'PROCESSING', 'ALGORITHM', 'NEURAL', 'NETWORK',
+                'COMPUTING', 'INTELLIGENCE', 'ANALYSIS', 'AUTOMATED', 'FACE',
+                'TRACKING', 'MONITORING', 'ANALYTICS', 'SMART', 'DIGITAL',
+                'TECHNOLOGY', 'SOFTWARE', 'HARDWARE', 'PROCESS', 'AUTONOMOUS',
+                'ROBOTICS', 'CYBERNETICS', 'OPTICAL', 'BOOT', 'SHUTDOWN', 'ERROR',
+                'KERNEL', 'MEMORY', 'CACHE', 'BUFFER', 'QUEUE', 'THREAD',
+                'EXECUTION', 'COMPILATION', 'INTERPRETATION', 'PARALLEL',
+                'DISTRIBUTED', 'CLOUD', 'SERVER', 'CLIENT', 'PROTOCOL'
+            ];
+            const cols = 20;
+            const rows = 12;
+            const fragment = document.createDocumentFragment();
+
+            for (let i = 0; i < cols * rows; i++) {
+                const span = document.createElement('span');
+                span.className = 'scattered-word';
+                span.textContent = words[Math.floor(Math.random() * words.length)];
+                const col = i % cols;
+                const row = Math.floor(i / cols);
+                span.style.left = ((col / cols) * 100 + Math.random() * 2) + '%';
+                span.style.top = ((row / rows) * 100 + Math.random() * 2) + '%';
+                const grey = Math.floor(Math.random() * 80) + 120;
+                span.style.color = 'rgb(' + grey + ', ' + grey + ', ' + grey + ')';
+                span.style.fontSize = (Math.random() * 10 + 10) + 'px';
+                fragment.appendChild(span);
+            }
+            wordsContainer.appendChild(fragment);
+
+            setTimeout(function () {
+                wordsContainer.classList.add('show');
+                setTimeout(function () {
+                    preloader.classList.add('glitch');
+                    setTimeout(function () {
+                        preloader.classList.add('fade-out');
+                        setTimeout(function () {
+                            preloader.remove();
+                            document.body.style.overflow = '';
+                            startTyping();
+                        }, 500);
+                    }, 1000);
+                }, 2000);
+            }, 500);
+        });
+
+        function startTyping() {
+            const title = document.getElementById('heroTitle');
+            const description = document.getElementById('heroDescription');
+            const text = 'Say goodbye to incorrect records, proxy attendance, and human error.\nIntroducing our Automated Attendance System—mark attendance accurately with a single click!';
+            let index = 0;
+
+            title.textContent = 'AUTOMATED FACE DETECTION AND RECOGNITION ATTENDANCE SYSTEM';
+            description.classList.add('cursor-typing');
+
+            const timer = setInterval(function () {
+                if (index < text.length) {
+                    description.textContent += text[index++];
+                    return;
+                }
+                clearInterval(timer);
+                description.classList.replace('cursor-typing', 'cursor-blink');
+            }, 85);
+        }
+
+        (function () {
+            const featureContent = {
+                accurate: { title: 'Accurate Records', details: [
+                    'Reduces manual errors and maintains precise attendance information.',
+                    'Attendance data is automatically stored in an organized digital format.',
+                    'This ensures reliable records for future reference and analysis.'
+                ]},
+                proxy: { title: 'Prevents Proxy Attendance', details: [
+                    'Uses secure identification methods to ensure the correct student is marked present.',
+                    'It reduces the possibility of one student marking attendance for another.',
+                    'This improves fairness, transparency, and accountability in the classroom.'
+                ]},
+                time: { title: 'Saves Time', details: [
+                    'Automates attendance marking and eliminates the need for manual roll calls.',
+                    'Teachers can focus more on teaching instead of managing attendance sheets.',
+                    'Students can mark their attendance quickly with a single click.'
+                ]},
+                management: { title: 'Easy Data Management', details: [
+                    'Allows teachers to quickly view, manage, and generate attendance reports.',
+                    'Records can be searched, updated, and reviewed whenever required.',
+                    'This makes monitoring student attendance simple and convenient.'
+                ]}
+            };
+
+            const modal = document.getElementById('featureModal');
+            const modalTitle = document.getElementById('featureModalTitle');
+            const modalDetails = document.getElementById('featureModalDetails');
+            const closeButton = modal.querySelector('.feature-modal-close');
+            let lastFocusedCard = null;
+
+            function openFeature(featureKey, card) {
+                const content = featureContent[featureKey];
+                if (!content) return;
+                lastFocusedCard = card;
+                modalTitle.textContent = content.title;
+                modalDetails.replaceChildren(...content.details.map(function (detail) {
+                    const paragraph = document.createElement('p');
+                    paragraph.textContent = detail;
+                    return paragraph;
+                }));
+                modal.classList.add('is-open');
+                modal.setAttribute('aria-hidden', 'false');
+                closeButton.focus();
+            }
+
+            function closeFeature() {
+                modal.classList.remove('is-open');
+                modal.setAttribute('aria-hidden', 'true');
+                if (lastFocusedCard) lastFocusedCard.focus();
+            }
+
+            document.querySelectorAll('.help-btn').forEach(function (card) {
+                card.addEventListener('click', function () { openFeature(card.dataset.feature, card); });
+            });
+            closeButton.addEventListener('click', closeFeature);
+            modal.querySelector('.feature-modal-backdrop').addEventListener('click', closeFeature);
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape' && modal.classList.contains('is-open')) closeFeature();
+            });
+        })();
+
+        (function () {
+            const loginModal = document.getElementById('login');
+            const roleSelection = document.getElementById('roleSelection');
+            const loginOptions = document.getElementById('loginOptions');
+            const loginForms = loginOptions.querySelectorAll('.login-option');
+            let currentFrame = 1;
+            let ticking = false;
+
+            function showRoleSelection() {
+                roleSelection.classList.remove('is-hidden');
+                loginOptions.classList.remove('has-selection');
+                loginForms.forEach(function (form) { form.classList.remove('is-selected'); });
+            }
+
+            roleSelection.querySelectorAll('.role-btn').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    roleSelection.classList.add('is-hidden');
+                    loginOptions.classList.add('has-selection');
+                    loginForms.forEach(function (form) {
+                        form.classList.toggle('is-selected', form.dataset.loginRole === button.dataset.role);
+                    });
+                });
+            });
+
+            loginOptions.querySelectorAll('.role-back').forEach(function (button) {
+                button.addEventListener('click', showRoleSelection);
+            });
+
+            loginModal.querySelectorAll('.switch-link').forEach(function (link) {
+                link.addEventListener('click', function () {
+                    loginModal.classList.remove('auto-open');
+                });
+            });
+
+            function getCurrentFrame() {
+                return Math.max(1, Math.min(3, Math.round(scrollY / innerHeight) + 1));
+            }
+
+            function updateFrame() {
+                const nextFrame = getCurrentFrame();
+                if (currentFrame === 2 && nextFrame === 3) {
+                    showRoleSelection();
+                    loginModal.classList.add('auto-open');
+                }
+                currentFrame = nextFrame;
+                ticking = false;
+            }
+
+            window.addEventListener('scroll', function () {
+                if (ticking) return;
+                ticking = true;
+                requestAnimationFrame(updateFrame);
+            }, { passive: true });
+
+            loginModal.querySelectorAll('.close-modal, .modal-backdrop-close').forEach(function (control) {
+                control.addEventListener('click', function (event) {
+                    if (loginModal.classList.contains('auto-open')) {
+                        event.preventDefault();
+                        loginModal.classList.remove('auto-open');
+                    }
+                });
+            });
+
+            currentFrame = getCurrentFrame();
+        })();
+
+        // Submit registration and login forms to the FastAPI backend.
+        (function () {
+            document.querySelectorAll('.password-toggle').forEach(function (toggle) {
+                toggle.addEventListener('click', function () {
+                    const input = toggle.closest('.input-box').querySelector('input');
+                    const passwordIsVisible = input.type === 'text';
+                    input.type = passwordIsVisible ? 'password' : 'text';
+                    toggle.setAttribute('aria-pressed', String(!passwordIsVisible));
+                    toggle.setAttribute('aria-label', passwordIsVisible ? 'Show password' : 'Hide password');
+                    toggle.title = passwordIsVisible ? 'Show password' : 'Hide password';
+                });
+            });
+
+            async function submitForm(form, url, extraData) {
+                const status = form.querySelector('.form-status');
+                const submitButton = form.querySelector('[type="submit"]');
+                const data = Object.fromEntries(new FormData(form));
+                Object.assign(data, extraData || {});
+
+                status.textContent = 'Please wait...';
+                status.className = 'form-status';
+                submitButton.disabled = true;
+
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                    const result = await response.json();
+                    status.textContent = result.message;
+                    status.classList.add(response.ok ? 'success' : 'error');
+                    if (response.ok && url.endsWith('/register')) {
+                        form.reset();
+                        if (result.email_sent) {
+                            const toast = document.getElementById('registrationToast');
+                            toast.classList.remove('is-visible');
+                            void toast.offsetWidth;
+                            toast.classList.add('is-visible');
+                            window.setTimeout(function () {
+                                toast.classList.remove('is-visible');
+                            }, 3000);
+                        }
+                    }
+                    if (response.ok && result.redirect_url) {
+                        window.location.assign(result.redirect_url);
+                    }
+                } catch (error) {
+                    status.textContent = 'Cannot connect to the server. Start the FastAPI application and try again.';
+                    status.classList.add('error');
+                } finally {
+                    submitButton.disabled = false;
+                }
+            }
+
+            document.getElementById('registerForm').addEventListener('submit', function (event) {
+                event.preventDefault();
+                submitForm(event.currentTarget, '/api/register');
+            });
+
+            document.querySelectorAll('.login-option').forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    event.preventDefault();
+                    submitForm(form, '/api/login', { role: form.dataset.loginRole });
+                });
+            });
+        })();
+    </script>
+</body>
+</html>

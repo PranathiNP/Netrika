@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NETRIKA | Student</title>
+    <link rel="stylesheet" href="/dashboard.css">
+</head>
+<body class="student-dashboard">
+    <header class="dashboard-header">
+        <a class="dashboard-brand" href="/student">
+            <span class="dashboard-brand-name">NETRIKA</span>
+            <span class="dashboard-brand-tagline">See.Recognise.Record</span>
+        </a>
+        <div class="profile-area">
+            <button id="profileButton" class="profile-button" type="button" aria-expanded="false" aria-controls="profileMenu">
+                <span id="profileInitial">S</span>
+            </button>
+            <div id="profileMenu" class="profile-menu" hidden>
+                <button type="button" data-panel="analyticsPanel"><span aria-hidden="true">&#9637;</span> Live analytics</button>
+                <button type="button" data-panel="reportPanel"><span aria-hidden="true">&#9636;</span> Attendance report</button>
+                <button type="button" data-panel="enrollmentPanel"><span aria-hidden="true">&#9678;</span> Update face profile</button>
+
+                <button type="button" id="logoutButton">Logout</button>
+            </div>
+        </div>
+    </header>
+
+    <p class="student-welcome" id="studentWelcome">Welcome Student !</p>
+
+    <main class="student-content">
+        <section class="recognition-card analytics-card" id="analyticsPanel" data-dashboard-panel>
+            <p class="dashboard-label">Attendance overview</p>
+            <h1>Live analytics</h1>
+            <p id="analyticsStatus" role="status">Loading attendance...</p>
+            <div class="analytics-metrics">
+                <div><strong id="sessionMetric">0</strong><span>Sessions recorded</span></div>
+                <div><strong id="presentMetric">0</strong><span id="presentLabel">Present</span></div>
+                <div><strong id="rateMetric">0%</strong><span>Attendance rate</span></div>
+            </div>
+            <h2>Recent attendance</h2>
+            <div id="attendanceTrend" class="attendance-trend" aria-label="Attendance rate by session"></div>
+            <p>Updates automatically every 15 seconds.</p>
+        </section>
+
+        <section class="dashboard-card" id="enrollmentPanel" data-dashboard-panel hidden>
+            <p class="dashboard-label">Student portal</p>
+            <h1>Face Recognition</h1>
+            <p>Register with the camera from your profile menu, or upload a video of yourself looking forward, left, right and smiling.</p>
+            <button class="primary-action" type="button" id="faceRegistrationButton">Guided camera capture</button>
+            <label for="enrollmentVideo">Enrollment video (up to 15 seconds, 30 MB)</label>
+            <input id="enrollmentVideo" type="file" accept="video/*">
+            <button type="button" class="primary-action" id="uploadEnrollment">Save face images</button>
+            <p id="enrollmentStatus" role="status"></p>
+        </section>
+        <section class="recognition-card attendance-card" id="reportPanel" data-dashboard-panel hidden>
+            <h2>Attendance report</h2>
+            <p>Each teacher upload records one session. Not detected means no face match was found.</p>
+            <button type="button" class="primary-action" id="refreshAttendance">Refresh report</button>
+            <p id="attendanceStatus" role="status"></p>
+            <div id="attendanceReports"></div>
+        </section>
+    </main>
+
+    <dialog class="registration-dialog" id="guideDialog">
+        <button class="dialog-close" type="button" data-close="guideDialog" aria-label="Close">×</button>
+        <h2>Face registration guide</h2>
+        <div class="pose-demo" aria-label="Animated face-position demonstration">
+            <div class="direction-arrow direction-left">←</div>
+            <div class="demo-person">
+                <div class="demo-hair-back"></div>
+                <div class="demo-head">
+                    <span class="demo-hair"></span>
+                    <span class="demo-eye demo-eye-left"></span>
+                    <span class="demo-eye demo-eye-right"></span>
+                    <span class="demo-nose"></span>
+                    <span class="demo-smile"></span>
+                </div>
+                <div class="demo-body"></div>
+                <div class="demo-laptop"><span></span></div>
+            </div>
+            <div class="direction-arrow direction-right">→</div>
+            <span class="pose-caption">Look straight → left → right → straight and smile</span>
+        </div>
+        <p>The video must be taken in this format, If understood - proceed</p>
+        <button class="primary-action" id="proceedButton" type="button">I understand — Proceed</button>
+    </dialog>
+
+    <dialog class="registration-dialog camera-dialog" id="cameraDialog">
+        <button class="dialog-close" type="button" id="cameraClose" aria-label="Close">×</button>
+        <h2>Face capture</h2>
+        <p id="captureInstruction">Position your face inside the circle and look straight.</p>
+        <div class="camera-stage">
+            <video id="cameraVideo" autoplay muted playsinline></video>
+            <canvas id="captureCanvas" hidden></canvas>
+            <div class="face-guide">
+                <span id="captureProgress" role="progressbar" aria-label="Face capture progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">0%</span>
+            </div>
+        </div>
+        <div class="capture-steps" id="captureSteps">
+            <span class="active">Front</span><span>Left</span><span>Right</span><span>Smile</span>
+        </div>
+        <p class="capture-status" id="captureStatus" role="status">Camera permission is required.</p>
+        <button class="primary-action" id="captureButton" type="button">Capture front</button>
+    </dialog>
+
+    <script src="/attendance.js" defer></script>
+    <script>
+        (function () {
+            const profileButton = document.getElementById('profileButton');
+            const profileMenu = document.getElementById('profileMenu');
+            const guideDialog = document.getElementById('guideDialog');
+            const cameraDialog = document.getElementById('cameraDialog');
+            const video = document.getElementById('cameraVideo');
+            const canvas = document.getElementById('captureCanvas');
+            const captureButton = document.getElementById('captureButton');
+            const captureStatus = document.getElementById('captureStatus');
+            const progress = document.getElementById('captureProgress');
+            const instruction = document.getElementById('captureInstruction');
+            const actions = ['front', 'left', 'right', 'smile'];
+            const directions = [
+                'Look straight into the camera.',
+                'Slowly turn your face to your left.',
+                'Slowly turn your face to your right.',
+                'Face forward again and smile.'
+            ];
+            let currentAction = 0;
+            let cameraStream = null;
+            let cameraSession = 0;
+            let captureId = null;
+
+            fetch('/api/me').then(function (response) {
+                if (!response.ok) throw new Error('Not logged in');
+                return response.json();
+            }).then(function (user) {
+                const name = user.name || 'Student';
+                document.getElementById('studentWelcome').textContent = 'Welcome ' + name + ' !';
+                document.getElementById('profileInitial').textContent = name.charAt(0).toUpperCase();
+            }).catch(function () { window.location.assign('/'); });
+
+            profileButton.addEventListener('click', function () {
+                const open = profileMenu.hidden;
+                profileMenu.hidden = !open;
+                profileButton.setAttribute('aria-expanded', String(open));
+            });
+            document.addEventListener('click', function (event) {
+                if (!event.target.closest('.profile-area')) {
+                    profileMenu.hidden = true;
+                    profileButton.setAttribute('aria-expanded', 'false');
+                }
+            });
+            document.getElementById('faceRegistrationButton').addEventListener('click', function () {
+                profileMenu.hidden = true;
+                guideDialog.showModal();
+            });
+            document.getElementById('logoutButton').addEventListener('click', async function () {
+                await fetch('/api/logout', { method: 'POST' });
+                window.location.assign('/');
+            });
+            document.querySelector('[data-close="guideDialog"]').addEventListener('click', function () {
+                guideDialog.close();
+            });
+
+            async function startCamera() {
+                stopCamera();
+                const session = cameraSession;
+                currentAction = 0;
+                progress.textContent = '0%';
+                progress.setAttribute('aria-valuenow', '0');
+                instruction.textContent = directions[0];
+                captureButton.textContent = 'Capture front';
+                captureButton.disabled = true;
+                document.querySelectorAll('#captureSteps span').forEach(function (step, index) {
+                    step.classList.remove('complete');
+                    step.classList.toggle('active', index === 0);
+                });
+                guideDialog.close();
+                cameraDialog.showModal();
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+                        audio: false
+                    });
+                    if (session !== cameraSession || !cameraDialog.open) {
+                        stream.getTracks().forEach(function (track) { track.stop(); });
+                        return;
+                    }
+                    cameraStream = stream;
+                    video.srcObject = cameraStream;
+                    const response = await fetch('/api/face-registration/start', {method: 'POST'});
+                    const data = await response.json();
+                    if (session !== cameraSession) {
+                        if (data.capture_id) fetch('/api/face-registration/capture/' + data.capture_id, {method: 'DELETE', keepalive: true}).catch(function () {});
+                        return;
+                    }
+                    if (!response.ok) throw new Error(data.message || 'Could not start capture.');
+                    captureId = data.capture_id;
+                    captureButton.disabled = false;
+                    captureStatus.textContent = 'Face detected by YOLO when each frame is submitted.';
+                } catch (error) {
+                    if (session !== cameraSession) return;
+                    stopCamera();
+                    captureStatus.textContent = error.message || 'Camera access failed. Allow camera permission and use localhost.';
+                    captureButton.disabled = true;
+                }
+            }
+
+            function stopCamera() {
+                if (captureId) {
+                    fetch('/api/face-registration/capture/' + captureId, {method: 'DELETE', keepalive: true}).catch(function () {});
+                    captureId = null;
+                }
+                cameraSession += 1;
+                if (cameraStream) cameraStream.getTracks().forEach(function (track) { track.stop(); });
+                cameraStream = null;
+                video.srcObject = null;
+                captureButton.disabled = true;
+            }
+
+            cameraDialog.addEventListener('cancel', stopCamera);
+            cameraDialog.addEventListener('close', stopCamera);
+            window.addEventListener('pagehide', stopCamera);
+
+            document.getElementById('proceedButton').addEventListener('click', startCamera);
+            document.getElementById('cameraClose').addEventListener('click', function () {
+                stopCamera();
+                cameraDialog.close();
+            });
+
+            captureButton.addEventListener('click', async function () {
+                if (!cameraStream || video.readyState < 2) return;
+                const session = cameraSession;
+                captureButton.disabled = true;
+                captureStatus.textContent = 'Detecting and saving face…';
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                canvas.getContext('2d').drawImage(video, 0, 0);
+                try {
+                    const response = await fetch('/api/face-registration/frame', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: actions[currentAction],
+                            capture_id: captureId,
+                            image: canvas.toDataURL('image/jpeg', 0.82)
+                        })
+                    });
+                    const result = await response.json();
+                    if (session !== cameraSession) return;
+                    captureStatus.textContent = result.message;
+                    if (!response.ok) return;
+                    progress.textContent = result.progress + '%';
+                    progress.setAttribute('aria-valuenow', String(result.progress));
+                    document.querySelectorAll('#captureSteps span')[currentAction].classList.add('complete');
+                    currentAction += 1;
+                    if (currentAction === actions.length) {
+                        instruction.textContent = 'Face registration complete! Previous images replaced.';
+                        document.getElementById('enrollmentStatus').textContent = '4 face images saved. Your previous images have been replaced.';
+                        captureButton.textContent = 'Completed';
+                        stopCamera();
+                        return;
+                    }
+                    document.querySelectorAll('#captureSteps span')[currentAction].classList.add('active');
+                    instruction.textContent = directions[currentAction];
+                    captureButton.textContent = 'Capture ' + actions[currentAction];
+                } catch (error) {
+                    if (session !== cameraSession) return;
+                    captureStatus.textContent = 'Could not connect to the face detection service.';
+                } finally {
+                    if (session === cameraSession && currentAction < actions.length && cameraStream) captureButton.disabled = false;
+                }
+            });
+        })();
+    </script>
+</body>
+</html>

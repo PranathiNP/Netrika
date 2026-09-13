@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NETRIKA | Teacher</title>
+    <link rel="stylesheet" href="/dashboard.css">
+</head>
+<body class="student-dashboard teacher-dashboard">
+    <header class="dashboard-header">
+        <a class="dashboard-brand" href="/teacher">
+            <span class="dashboard-brand-name">NETRIKA</span>
+            <span class="dashboard-brand-tagline">See.Recognise.Record</span>
+        </a>
+        <div class="profile-area">
+            <button id="profileButton" class="profile-button" type="button" aria-expanded="false" aria-controls="profileMenu">A</button>
+            <div id="profileMenu" class="profile-menu" hidden>
+                <button type="button" data-panel="analyticsPanel"><span aria-hidden="true">&#9637;</span> Live analytics</button>
+                <button type="button" data-panel="reportPanel"><span aria-hidden="true">&#9636;</span> Attendance report</button>
+                <button type="button" id="recognitionMenuButton" data-panel="recognitionPanel"><span aria-hidden="true">&#9678;</span> Face Recognition</button>
+                <button type="button" id="logoutButton">Logout</button>
+            </div>
+        </div>
+    </header>
+
+    <p class="student-welcome">Welcome Administrator !</p>
+
+    <main class="teacher-content">
+        <section class="recognition-card analytics-card" id="analyticsPanel" data-dashboard-panel>
+            <p class="dashboard-label">Attendance overview</p>
+            <h1>Live analytics</h1>
+            <p id="analyticsStatus" role="status">Loading attendance...</p>
+            <div class="analytics-metrics">
+                <div><strong id="sessionMetric">0</strong><span>Sessions recorded</span></div>
+                <div><strong id="presentMetric">0</strong><span id="presentLabel">Present</span></div>
+                <div><strong id="rateMetric">0%</strong><span>Attendance rate</span></div>
+            </div>
+            <h2>Recent attendance</h2>
+            <div id="attendanceTrend" class="attendance-trend" aria-label="Attendance rate by session"></div>
+            <p>Updates automatically every 15 seconds.</p>
+        </section>
+
+        <section class="recognition-card" id="recognitionPanel" data-dashboard-panel hidden>
+            <p class="dashboard-label">Teacher portal</p>
+            <h1>Face Recognition</h1>
+            <p>Upload a photo or a video up to five seconds. Registered students receive a white named box; unmatched faces receive a red <strong>Unknown</strong> box.</p>
+            <label class="media-drop" for="recognitionMedia">
+                <span class="upload-icon">＋</span>
+                <strong>Select a photo or 5-second video</strong>
+                <small>JPG, PNG, WEBP, MP4, MOV or WEBM · maximum 30 MB</small>
+            </label>
+            <input id="recognitionMedia" type="file" accept="image/*,video/*" hidden>
+            <div class="selected-media" id="selectedMedia">No file selected</div>
+            <button class="primary-action" id="recognizeButton" type="button" disabled>Identify faces</button>
+            <p class="capture-status" id="recognitionStatus" role="status"></p>
+            <div class="recognition-result" id="recognitionResult" hidden></div>
+        </section>
+        <section class="recognition-card attendance-card" id="reportPanel" data-dashboard-panel hidden>
+            <h2>Attendance report</h2>
+            <p>Each teacher upload records one session. Not detected means no face match was found.</p>
+            <button type="button" class="primary-action" id="refreshAttendance">Refresh report</button>
+            <p id="attendanceStatus" role="status"></p>
+            <div id="attendanceReports"></div>
+        </section>
+    </main>
+
+    <script src="/attendance.js" defer></script>
+    <script>
+        (function () {
+            const profileButton = document.getElementById('profileButton');
+            const profileMenu = document.getElementById('profileMenu');
+            const mediaInput = document.getElementById('recognitionMedia');
+            const selectedMedia = document.getElementById('selectedMedia');
+            const recognizeButton = document.getElementById('recognizeButton');
+            const status = document.getElementById('recognitionStatus');
+            const result = document.getElementById('recognitionResult');
+
+            profileButton.addEventListener('click', function () {
+                const open = profileMenu.hidden;
+                profileMenu.hidden = !open;
+                profileButton.setAttribute('aria-expanded', String(open));
+            });
+            document.getElementById('recognitionMenuButton').addEventListener('click', function () {
+                profileMenu.hidden = true;
+
+            });
+            document.getElementById('logoutButton').addEventListener('click', async function () {
+                await fetch('/api/logout', { method: 'POST' });
+                window.location.assign('/');
+            });
+
+            function validateVideo(file) {
+                return new Promise(function (resolve, reject) {
+                    const video = document.createElement('video');
+                    const objectUrl = URL.createObjectURL(file);
+                    video.preload = 'metadata';
+                    video.onloadedmetadata = function () {
+                        URL.revokeObjectURL(objectUrl);
+                        video.duration <= 5.25 ? resolve() : reject(new Error('Video must be five seconds or shorter.'));
+                    };
+                    video.onerror = function () {
+                        URL.revokeObjectURL(objectUrl);
+                        reject(new Error('This video could not be read.'));
+                    };
+                    video.src = objectUrl;
+                });
+            }
+
+            mediaInput.addEventListener('change', async function () {
+                const file = mediaInput.files[0];
+                recognizeButton.disabled = true;
+                if (!file) return;
+                if (file.size > 30000000) {
+                    status.textContent = 'The file must be smaller than 30 MB.';
+                    return;
+                }
+                try {
+                    if (file.type.startsWith('video/')) await validateVideo(file);
+                    selectedMedia.textContent = file.name;
+                    status.textContent = '';
+                    recognizeButton.disabled = false;
+                } catch (error) {
+                    status.textContent = error.message;
+                }
+            });
+
+            recognizeButton.addEventListener('click', async function () {
+                const file = mediaInput.files[0];
+                if (!file) return;
+                recognizeButton.disabled = true;
+                mediaInput.disabled = true;
+                status.textContent = 'Detecting and identifying faces… Video processing may take a moment.';
+                result.hidden = true;
+                result.replaceChildren();
+                const body = new FormData();
+                body.append('media', file);
+                try {
+                    const response = await fetch('/api/recognize', { method: 'POST', body: body });
+                    const data = await response.json();
+                    status.textContent = data.message;
+                    if (!response.ok) return;
+                    const output = document.createElement(data.media_type.startsWith('video/') ? 'video' : 'img');
+                    output.src = data.result_url;
+                    output.alt = 'Recognized faces result';
+                    if (output.tagName === 'VIDEO') output.controls = true;
+                    result.appendChild(output);
+                    const download = document.createElement('a');
+                    download.href = data.result_url;
+                    download.download = data.media_type.startsWith('video/') ? 'recognized-video.mp4' : 'recognized-photo.jpg';
+                    download.textContent = 'Download annotated result';
+                    result.appendChild(download);
+                    const names = document.createElement('p');
+                    names.textContent = 'Detected: ' + (data.names.length ? data.names.join(', ') : 'No faces');
+                    result.appendChild(names);
+                    result.hidden = false;
+                    window.loadAttendance();
+                } catch (error) {
+                    status.textContent = 'Could not connect to the recognition service.';
+                } finally {
+                    recognizeButton.disabled = false;
+                    mediaInput.disabled = false;
+                }
+            });
+        })();
+    </script>
+</body>
+</html>

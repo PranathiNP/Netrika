@@ -1,0 +1,16 @@
+**
+!Dockerfile
+!requirements.txt
+!app.py
+!password_reset.py
+!index.html
+!student.html
+!teacher.html
+!password_reset.html
+!style.css
+!dashboard.css
+!attendance.js
+!Background.jpg
+!dashboard-clouds.png
+!yolov8n-face.pt
+!face_recognition_sface.onnx
