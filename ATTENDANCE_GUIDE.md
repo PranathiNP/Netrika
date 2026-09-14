@@ -19,8 +19,8 @@ Start MongoDB and run `.venv\Scripts\python.exe app.py`, then open http://127.0.
 
 There is currently one global student roster; courses and scheduled class sessions are not modeled. Every upload creates a new session. Not detected does not prove absence.
 
-Detection supports crowds larger than 40 faces (300 detection limit, 1280 inference size). Actual identification depends on clear enrollment images and visible faces in the crowd. The threshold defaults to 0.42 and can be configured with `FACE_MATCH_THRESHOLD`; validate it using representative images before relying on attendance. Existing SFace extraction uses resized face crops, without landmark alignment. No real 40-person accuracy benchmark has been run.
+Detection supports crowds larger than 40 faces (300 detection limit, 1280 inference size). Actual identification depends on clear enrollment images and visible faces in the crowd. The threshold defaults to 0.50 and can be configured with `FACE_MATCH_THRESHOLD`; validate it using representative images before relying on attendance. SFace now uses YuNet landmark alignment. A student ID can be assigned only once per frame. Ambiguous candidates remain Unknown, with a default score margin of 0.08 controlled by FACE_MATCH_MARGIN. These defaults require calibration using representative footage; stricter rejection can increase missed matches. No real 40-person accuracy benchmark has been run.
 
-Annotated videos use MPEG-4 encoding; browser playback depends on codec support. A download link is included for viewing the result in a compatible player.
+New annotated videos use H.264 MP4 with fast-start metadata and byte-range support for browser playback and seeking. Reprocess older uploads to regenerate their video encoding. The download link remains available.
 
 Run `.venv\Scripts\python.exe -m unittest test_attendance -v` for regression tests. MongoDB must be available. Tests use and delete a unique `netrika_test_*` database. Inference is mocked for deterministic identity tests; image storage, video decoding, session authorization and attendance persistence use the real application and database.

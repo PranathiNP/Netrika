@@ -66,7 +66,7 @@ class DashboardUpdatesTests(unittest.TestCase):
         detector = Mock()
         detector.predict.return_value = [Mock(boxes=boxes)]
         capture_id = self.client.post('/api/face-registration/start').json()['capture_id']
-        with patch.object(app, 'get_face_model', return_value=detector):
+        with patch.object(app, 'get_face_model', return_value=detector), patch.object(app, 'face_feature', return_value=np.array([1., 0.])):
             self.assertEqual(self.client.post('/api/face-registration/frame', json={'capture_id': capture_id, 'action': 'smile', 'image': image}).status_code, 409)
             for index, action in enumerate(['front', 'left', 'right', 'smile']):
                 response = self.client.post('/api/face-registration/frame', json={'capture_id': capture_id, 'action': action, 'image': image})
@@ -77,7 +77,7 @@ class DashboardUpdatesTests(unittest.TestCase):
         self.client.delete('/api/face-registration/capture/' + capture_id)
         self.assertEqual(self.db['face_frames.files'].count_documents({}), 4)
         capture_id = self.client.post('/api/face-registration/start').json()['capture_id']
-        with patch.object(app, 'get_face_model', return_value=detector):
+        with patch.object(app, 'get_face_model', return_value=detector), patch.object(app, 'face_feature', return_value=np.array([1., 0.])):
             self.client.post('/api/face-registration/frame', json={'capture_id': capture_id, 'action': 'front', 'image': image})
         self.assertEqual(self.client.get('/api/face-registration').json()['saved_frames'], 4)
         self.client.delete('/api/face-registration/capture/' + capture_id)

@@ -106,7 +106,8 @@ Open **http://127.0.0.1:8000**. Docker uses Python 3.11; the Windows development
 | `SMTP_FROM` | Sender address for application emails |
 | `APP_BASE_URL` | Address used in password-reset links; set to your running app's URL |
 | `COOKIE_SECURE` | Set to `true` when serving the app over HTTPS |
-| `FACE_MATCH_THRESHOLD` | Minimum face similarity score; defaults to `0.42` |
+| `FACE_MATCH_THRESHOLD` | Minimum face similarity score; defaults to `0.50` |
+| `FACE_MATCH_MARGIN` | Required score separation between competing matches; defaults to `0.08` |
 
 Keep `.env` private; it is excluded from Git and the Docker image. Real SMTP credentials are required for student recovery emails. Teacher password recovery is disabled.
 
@@ -123,8 +124,8 @@ Keep `.env` private; it is excluded from Git and the Docker image. Real SMTP cre
 - **Not detected does not prove absence.** Face size, lighting, occlusion, and enrollment quality affect matching.
 - A simulated 40-face test verifies processing logic, not identification accuracy on a real 40-person crowd.
 - Camera poses are user-guided; the detector checks for one face, not whether the person is smiling.
-- SFace currently uses resized face crops without landmark alignment.
-- Annotated video playback depends on browser codec support; a download link is available.
+- YuNet landmarks align each face before SFace extraction. Faces below 40 pixels or without reliable landmarks remain Unknown. A student ID is assigned at most once per frame; competing matches with insufficient score separation are rejected.
+- New annotated videos use H.264 MP4 with fast-start metadata and byte-range delivery for browser playback and seeking. Older results must be regenerated to use the new encoding.
 - This Docker configuration runs locally. It does not publish a website to the internet.
 
 ## Verification
@@ -133,7 +134,7 @@ With MongoDB running, install the test client dependency and run:
 
 ```powershell
 .\.venv\Scripts\python.exe -m pip install httpx
-.\.venv\Scripts\python.exe -m unittest test_attendance test_dashboard_updates -v
+.\.venv\Scripts\python.exe -m unittest test_face_matching test_attendance test_dashboard_updates -v
 ```
 
 Tests use a temporary `netrika_test_*` database and delete it afterward. They cover attendance persistence, student access restrictions, video enrollment storage, face-image replacement, capture progress, and student password recovery. Email and identity inference are mocked for deterministic tests.
@@ -154,3 +155,11 @@ test_dashboard_updates.py    Recovery and enrollment regression tests
 ```
 
 See [Docker instructions](DOCKER.md), [attendance workflow](ATTENDANCE_GUIDE.md), and [database setup](DATABASE_SETUP_GUIDE.md) for more detail.
+
+## Performance and maintenance
+
+Enrollment embeddings are cached in image metadata after first use. Model file fingerprints and a preprocessing version invalidate the derived cache when needed. Each recognition request reads the current student and active-image records, so deleted or pending enrollment images are not reused. Corrupt image files are skipped. The original images and all features remain available.
+
+Dashboard polling continues every 15 seconds, but unchanged reports do not rebuild the tables and charts. Docker installs CPU PyTorch in a separate layer so ordinary dependency changes can reuse it, and copies assets with their final ownership to avoid duplicating model files in a later ownership-change layer. Build context remains restricted to runtime files.
+
+Run `python -m unittest test_feature_store test_face_matching test_media_delivery test_attendance test_dashboard_updates -v` for the full regression suite. Feature caching adds a small amount of derived metadata to MongoDB in exchange for avoiding repeated model inference.

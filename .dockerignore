@@ -2,6 +2,10 @@
 !Dockerfile
 !requirements.txt
 !app.py
+!face_matching.py
+!media_delivery.py
+!feature_store.py
+!face_detection_yunet.onnx
 !password_reset.py
 !index.html
 !student.html

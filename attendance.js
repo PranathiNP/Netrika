@@ -45,6 +45,7 @@
         analyticsStatus.textContent = reports.length ? 'Updated ' + new Date().toLocaleTimeString() : 'No attendance sessions yet.';
     }
     let loading = false;
+    let lastReportData = null;
     window.loadAttendance = async function () {
         if (loading) return;
         loading = true;
@@ -53,6 +54,12 @@
             const response = await fetch('/api/attendance');
             const data = await response.json();
             if (!response.ok) throw new Error(data.message || 'Could not load attendance.');
+            const reportData = JSON.stringify(data.reports);
+            if (reportData === lastReportData) {
+                analyticsStatus.textContent = data.reports.length ? 'Updated ' + new Date().toLocaleTimeString() : 'No attendance sessions yet.';
+                status.textContent = data.reports.length ? '' : 'No attendance sessions yet.';
+                return;
+            }
             renderAnalytics(data.reports);
             container.replaceChildren();
             data.reports.forEach(function (report) {
@@ -82,6 +89,7 @@
                 container.appendChild(section);
             });
             status.textContent = data.reports.length ? '' : 'No attendance sessions yet.';
+            lastReportData = reportData;
         } catch (error) {
             status.textContent = error.message;
             analyticsStatus.textContent = error.message + ' Retrying automatically.';

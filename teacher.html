@@ -142,7 +142,14 @@
                     const output = document.createElement(data.media_type.startsWith('video/') ? 'video' : 'img');
                     output.src = data.result_url;
                     output.alt = 'Recognized faces result';
-                    if (output.tagName === 'VIDEO') output.controls = true;
+                    if (output.tagName === 'VIDEO') {
+                        output.controls = true;
+                        output.playsInline = true;
+                        output.preload = 'metadata';
+                        output.addEventListener('error', function () {
+                            status.textContent = 'The video could not be played. Try processing it again or download the result.';
+                        });
+                    }
                     result.appendChild(output);
                     const download = document.createElement('a');
                     download.href = data.result_url;

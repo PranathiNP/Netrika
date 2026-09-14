@@ -5,11 +5,11 @@ import base64
 import binascii
 import tempfile
 import math
+import hashlib
 import secrets
 from functools import wraps
 from threading import RLock
 from hmac import compare_digest
-from io import BytesIO
 from datetime import datetime, timezone
 from email.message import EmailMessage
 from pathlib import Path
@@ -18,13 +18,16 @@ import uvicorn
 from dotenv import load_dotenv
 from bson import ObjectId
 from fastapi import FastAPI, File, Request, UploadFile
-from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 from pymongo import ASCENDING, MongoClient
 from gridfs import GridFS
 from pymongo.errors import DuplicateKeyError, PyMongoError
 from starlette.middleware.sessions import SessionMiddleware
 from werkzeug.security import check_password_hash, generate_password_hash
+from face_matching import match_faces
+from feature_store import load_student_features
+from media_delivery import browser_video, stored_media_response
 
 
 load_dotenv()
@@ -47,6 +50,7 @@ face_frames = GridFS(database, collection="face_frames")
 recognition_results = GridFS(database, collection="recognition_results")
 face_model = None
 recognition_model = None
+landmark_model = None
 model_lock = RLock()
 enrollment_lock = RLock()
 
@@ -106,6 +110,17 @@ def get_recognition_model():
     return recognition_model
 
 
+def get_landmark_model():
+    global landmark_model
+    if landmark_model is None:
+        import cv2
+        path = Path(os.getenv("YUNET_MODEL", "face_detection_yunet.onnx"))
+        if not path.is_absolute():
+            path = app_dir / path
+        landmark_model = cv2.FaceDetectorYN.create(str(path), "", (320, 320), 0.8, 0.3, 5000)
+    return landmark_model
+
+
 def face_feature(image, box):
     import cv2
     import numpy as np
@@ -114,38 +129,50 @@ def face_feature(image, box):
         return None
     height, width = image.shape[:2]
     x1, y1, x2, y2 = [int(value) for value in box]
-    padding_x = int((x2 - x1) * 0.18)
-    padding_y = int((y2 - y1) * 0.18)
-    crop = image[max(0, y1-padding_y):min(height, y2+padding_y), max(0, x1-padding_x):min(width, x2+padding_x)]
+    x1, y1, x2, y2 = max(0, x1), max(0, y1), min(width, x2), min(height, y2)
+    if min(x2 - x1, y2 - y1) < 40:
+        return None
+    padding_x = int((x2 - x1) * 0.25)
+    padding_y = int((y2 - y1) * 0.25)
+    left, top = max(0, x1-padding_x), max(0, y1-padding_y)
+    crop = image[top:min(height, y2+padding_y), left:min(width, x2+padding_x)]
     if crop.size == 0:
         return None
-    crop = cv2.resize(crop, (112, 112))
     with model_lock:
-        feature = get_recognition_model().feature(crop).flatten().astype("float32")
+        detector = get_landmark_model()
+        detector.setInputSize((crop.shape[1], crop.shape[0]))
+        _, faces = detector.detect(crop)
+        if faces is None:
+            return None
+        # Associate landmarks with this YOLO box, not a neighboring face.
+        candidates = []
+        for face in faces:
+            fx, fy, fw, fh = face[:4]
+            fx, fy = fx + left, fy + top
+            overlap = max(0, min(x2, fx+fw)-max(x1, fx)) * max(0, min(y2, fy+fh)-max(y1, fy))
+            union = (x2-x1)*(y2-y1) + fw*fh - overlap
+            if union > 0 and overlap / union >= 0.5:
+                candidates.append(face)
+        if len(candidates) != 1:
+            return None
+        recognizer = get_recognition_model()
+        aligned = recognizer.alignCrop(crop, candidates[0])
+        feature = recognizer.feature(aligned).flatten().astype("float32")
     norm = np.linalg.norm(feature)
-    return feature / norm if norm else None
+    return feature / norm if np.isfinite(norm) and norm > 0 else None
 
 
 def known_student_features():
-    import cv2
-    import numpy as np
-
-    known = []
-    stored_files = database["face_frames.files"]
-    for user in users_collection().find({"role": "student"}, {"full_name": 1}):
-        features = []
-        for stored in stored_files.find({"metadata.user_id": str(user["_id"]), "metadata.pending": {"$ne": True}}):
-            image_bytes = face_frames.get(stored["_id"]).read()
-            image = cv2.imdecode(np.frombuffer(image_bytes, dtype=np.uint8), cv2.IMREAD_COLOR)
-            feature = face_feature(image, stored["metadata"]["face_box"])
-            if feature is not None:
-                features.append(feature)
-        if features:
-            average = np.mean(features, axis=0)
-            norm = np.linalg.norm(average)
-            if norm > 0:
-                known.append((str(user["_id"]), user["full_name"], average / norm))
-    return known
+    # Include preprocessing revision and model fingerprints in the cache key.
+    fingerprints = ["aligned-sface-v1-min40"]
+    for key, default in [("SFACE_MODEL", "face_recognition_sface.onnx"), ("YUNET_MODEL", "face_detection_yunet.onnx")]:
+        path = Path(os.getenv(key, default))
+        if not path.is_absolute():
+            path = app_dir / path
+        stat = path.stat()
+        fingerprints.append(f"{path.resolve()}:{stat.st_size}:{stat.st_mtime_ns}")
+    version = hashlib.sha256("|".join(fingerprints).encode()).hexdigest()
+    return load_student_features(database, face_frames, face_feature, version)
 
 
 def annotate_faces(image, known):
@@ -156,21 +183,14 @@ def annotate_faces(image, known):
         result = get_face_model().predict(image, conf=0.45, imgsz=1280, max_det=300, verbose=False)[0]
     recognized = []
     source = image.copy()
-    for raw_box in result.boxes.xyxy.tolist():
-        box = [int(value) for value in raw_box]
-        feature = face_feature(source, box)
-        student_id = None
-        name = "Unknown"
-        best_score = -1.0
-        if feature is not None:
-            for known_id, student_name, student_feature in known:
-                score = float(np.dot(feature, student_feature))
-                if score > best_score:
-                    student_id, name, best_score = known_id, student_name, score
-        if best_score < float(os.getenv("FACE_MATCH_THRESHOLD", "0.42")):
-            name = "Unknown"
-            student_id = None
-        color = (255, 255, 255) if name != "Unknown" else (0, 0, 255)
+    boxes = [[int(value) for value in box] for box in result.boxes.xyxy.tolist()]
+    features = [face_feature(source, box) for box in boxes]
+    matches = match_faces(features, known,
+        threshold=float(os.getenv("FACE_MATCH_THRESHOLD", "0.50")),
+        margin=float(os.getenv("FACE_MATCH_MARGIN", "0.08")))
+    for box, match in zip(boxes, matches):
+        student_id, name = match if match else (None, "Unknown")
+        color = (255, 255, 255) if student_id else (0, 0, 255)
         x1, y1, x2, y2 = box
         cv2.rectangle(image, (x1, y1), (x2, y2), color, 3)
         label_y = max(25, y1 - 10)
@@ -321,6 +341,8 @@ def save_face_frame(data: FaceFramePayload, request: Request):
                 {"message": "Keep exactly one face inside the circle."}, status_code=422
             )
         box = [round(float(value), 2) for value in result.boxes.xyxy[0].tolist()]
+        if face_feature(image, box) is None:
+            return JSONResponse({"message": "Face is too small or landmarks are unclear. Move closer and turn only slightly."}, status_code=422)
 
         user_id = request.session["user_id"]
         stored_frames = database["face_frames.files"]
@@ -435,7 +457,9 @@ def recognize_faces(request: Request, media: UploadFile = File(...)):
                     capture.release()
                     if writer is not None:
                         writer.release()
-                result_bytes = output_path.read_bytes()
+                browser_path = Path(temp_dir) / "browser-video.mp4"
+                browser_video(output_path, browser_path)
+                result_bytes = browser_path.read_bytes()
             result_type = "video/mp4"
             filename = "recognized-video.mp4"
 
@@ -484,19 +508,16 @@ def recognize_faces(request: Request, media: UploadFile = File(...)):
         return JSONResponse({"message": "Face recognition could not be completed."}, status_code=500)
 
 
-@app.get("/api/recognition/result/{result_id}")
+@app.api_route("/api/recognition/result/{result_id}", methods=["GET", "HEAD"])
 def recognition_result(result_id: str, request: Request):
     if request.session.get("role") != "teacher":
         return JSONResponse({"message": "Teacher login required."}, status_code=401)
     try:
         stored = recognition_results.get(ObjectId(result_id))
         if stored.metadata.get("teacher_id") != request.session.get("user_id"):
+            stored.close()
             return JSONResponse({"message": "Recognition result was not found."}, status_code=404)
-        return StreamingResponse(
-            BytesIO(stored.read()),
-            media_type=stored.content_type,
-            headers={"Content-Disposition": f'inline; filename="{stored.filename}"'},
-        )
+        return stored_media_response(stored, request)
     except Exception:
         return JSONResponse({"message": "Recognition result was not found."}, status_code=404)
 
