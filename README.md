@@ -4,7 +4,7 @@
 
 NETRIKA is a face-recognition attendance application built with **YOLO, OpenCV SFace, FastAPI, and MongoDB**. Students enroll their faces using camera captures or video uploads. Teachers submit a group photo or short video to identify enrolled students, label unmatched faces as **Unknown**, and save an attendance report.
 
-> The current recognition implementation uses **SFace**, not ArcFace. Real crowd-recognition accuracy has not yet been benchmarked.
+> Face recognition uses **SFace**. Real crowd-recognition accuracy has not yet been benchmarked.
 
 ## Features
 
